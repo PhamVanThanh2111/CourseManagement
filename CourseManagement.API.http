@@ -1,0 +1,7 @@
+@CourseManagement.API_HostAddress = https://localhost:7071
+
+GET {{CourseManagement.API_HostAddress}}/api/hello
+Accept: application/json
+
+###
+
