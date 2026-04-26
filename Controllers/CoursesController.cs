@@ -5,10 +5,12 @@ using CourseManagement.API.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace CourseManagement.API.Controllers
 {
-    [Route("api/courses")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class CoursesController : Controller
@@ -27,11 +29,39 @@ namespace CourseManagement.API.Controllers
 
         // 2. GET: api/courses/5 (Lấy chi tiết theo ID)
         [HttpGet("{id}")]
-        public async Task<ActionResult<Course>> GetCourse(Guid id)
+        public async Task<ActionResult<Course>> GetCourse(Guid id, [FromServices] IDistributedCache cache)
         {
+            string cacheKey = $"course_{id}";
+
+            // 1. Thử lấy từ Redis
+            var cachedCourse = await cache.GetStringAsync(cacheKey);
+            if (!string.IsNullOrEmpty(cachedCourse))
+            {
+                Console.WriteLine("Lấy dữ liệu từ Redis Cache");
+                var courseFromCache = JsonSerializer.Deserialize<CourseResponseDto>(cachedCourse);
+                return Ok(courseFromCache);
+            }
+            Console.WriteLine("Không tìm thấy trong Redis Cache, truy vấn từ DB");
+
+            // 2. Không có trong Redis thì vào DB
             var course = await _context.Courses.FindAsync(id);
-            if (course == null) return NotFound(new { Message = "Không tìm thấy khóa học" });
-            return course;
+            if (course == null) return NotFound();
+
+            var mapper = _mapper.ConfigurationProvider;
+            var maps = mapper.GetType();
+            Console.WriteLine($"Mapper type: {maps.FullName}");
+
+            var response = _mapper.Map<CourseResponseDto>(course);
+            //var response = course;
+
+            // 3. Lưu vào Redis để lần sau lấy cho nhanh (Set thời gian sống - TTL)
+            var options = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(10)) // Hết hạn sau 10 phút
+                .SetSlidingExpiration(TimeSpan.FromMinutes(2));  // Nếu 2 phút không ai đụng tới thì cũng xóa luôn
+
+            await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(response), options);
+
+            return Ok(response);
         }
 
         // 3. POST: api/courses (Tạo mới)

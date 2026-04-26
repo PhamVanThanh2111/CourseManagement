@@ -1,10 +1,11 @@
+using AutoMapper;
 using CourseManagement.API.Data;
 using CourseManagement.API.Mappings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Scalar.AspNetCore;
+using System.Text;
 
 namespace CourseManagement.API
 {
@@ -53,7 +54,7 @@ namespace CourseManagement.API
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            builder.Services.AddAutoMapper(typeof(MappingProfile));
+            builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
             // --- 3. JWT Authentication ---
             var jwtKey = builder.Configuration["Jwt:Key"] ?? "SecretKeyMacDinhCuaThanh2026";
@@ -74,6 +75,12 @@ namespace CourseManagement.API
                 });
 
             builder.Services.AddAuthorization();
+
+            builder.Services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = builder.Configuration.GetConnectionString("RedisConnection") ?? "localhost:6379";
+                options.InstanceName = "CourseCatalog_"; // Tiền tố để phân biệt các app khác nhau
+            });
 
             var app = builder.Build();
 

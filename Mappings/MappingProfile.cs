@@ -10,6 +10,8 @@ namespace CourseManagement.API.Mappings
         {
             CreateMap<UpdateCourseDto, Course>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<CourseManagement.API.Entities.Course, CourseResponseDto>();
         }
     }
 }
