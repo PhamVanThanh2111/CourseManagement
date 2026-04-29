@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
+using Microsoft.OpenApi;
+using CourseManagement.API.Services.Interfaces;
 
 namespace CourseManagement.API
 {
@@ -23,12 +25,12 @@ namespace CourseManagement.API
                 options.AddDocumentTransformer((document, context, cancellationToken) =>
                 {
                     // 1. Khai báo cấu trúc Bearer Token
-                    document.Components ??= new Microsoft.OpenApi.OpenApiComponents();
-                    document.Components.SecuritySchemes ??= new Dictionary<string, Microsoft.OpenApi.IOpenApiSecurityScheme>();
+                    document.Components ??= new OpenApiComponents();
+                    document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
 
-                    var securityScheme = new Microsoft.OpenApi.OpenApiSecurityScheme
+                    var securityScheme = new OpenApiSecurityScheme
                     {
-                        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+                        Type = SecuritySchemeType.Http,
                         Scheme = "bearer",
                         BearerFormat = "JWT",
                         Description = "Dán Token vào đây (Scalar sẽ tự thêm chữ Bearer)"
@@ -40,10 +42,10 @@ namespace CourseManagement.API
                     }
 
                     // 2. Áp dụng Security Requirement lên toàn bộ Document
-                    var requirement = new Microsoft.OpenApi.OpenApiSecurityRequirement();
-                    requirement.Add(new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer"), new List<string>());
+                    var requirement = new OpenApiSecurityRequirement();
+                    requirement.Add(new OpenApiSecuritySchemeReference("Bearer"), new List<string>());
 
-                    document.Security ??= new List<Microsoft.OpenApi.OpenApiSecurityRequirement>();
+                    document.Security ??= new List<OpenApiSecurityRequirement>();
                     document.Security.Add(requirement);
 
                     return Task.CompletedTask;
@@ -55,6 +57,11 @@ namespace CourseManagement.API
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+
+            // Register Services
+            builder.Services.AddScoped<IAuthService, Services.AuthService>();
+            builder.Services.AddScoped<IUserService, Services.UserService>();
+            builder.Services.AddScoped<ICourseService, Services.CourseService>();
 
             // --- 3. JWT Authentication ---
             var jwtKey = builder.Configuration["Jwt:Key"] ?? "SecretKeyMacDinhCuaThanh2026";
@@ -91,9 +98,8 @@ namespace CourseManagement.API
 
                 // Truy cập qua /scalar/v1
                 app.MapScalarApiReference();
+                app.UseHttpsRedirection(); // Chỉ ép HTTPS trong môi trường Development
             }
-
-            app.UseHttpsRedirection();
 
             app.UseAuthentication();
 

@@ -1,0 +1,94 @@
+using AutoMapper;
+using CourseManagement.API.Data;
+using CourseManagement.API.DTOs;
+using CourseManagement.API.Entities;
+using CourseManagement.API.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
+
+namespace CourseManagement.API.Services
+{
+    public class CourseService : ICourseService
+    {
+        private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
+        private readonly IDistributedCache _cache;
+
+        public CourseService(AppDbContext context, IMapper mapper, IDistributedCache cache)
+        {
+            _context = context;
+            _mapper = mapper;
+            _cache = cache;
+        }
+
+        public async Task<IEnumerable<Course>> GetCoursesAsync()
+        {
+            return await _context.Courses.ToListAsync();
+        }
+
+        public async Task<(bool IsSuccess, CourseResponseDto? Data)> GetCourseAsync(Guid id)
+        {
+            string cacheKey = $"course_{id}";
+
+            // 1. Thử lấy từ Redis
+            var cachedCourse = await _cache.GetStringAsync(cacheKey);
+            if (!string.IsNullOrEmpty(cachedCourse))
+            {
+                var courseFromCache = JsonSerializer.Deserialize<CourseResponseDto>(cachedCourse);
+                return (true, courseFromCache);
+            }
+
+            // 2. Không có trong Redis thì vào DB
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null) return (false, null);
+
+            var response = _mapper.Map<CourseResponseDto>(course);
+
+            // 3. Lưu vào Redis
+            var options = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(10))
+                .SetSlidingExpiration(TimeSpan.FromMinutes(2));
+
+            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(response), options);
+
+            return (true, response);
+        }
+
+        public async Task<Course> CreateCourseAsync(CreateCourseDto courseDto)
+        {
+            var course = new Course
+            {
+                Title = courseDto.Title,
+                Description = courseDto.Description,
+                Price = courseDto.Price,
+                Author = courseDto.Author,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Courses.Add(course);
+            await _context.SaveChangesAsync();
+            return course;
+        }
+
+        public async Task<bool> UpdateCourseAsync(Guid id, UpdateCourseDto courseDto)
+        {
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null) return false;
+
+            _mapper.Map(courseDto, course);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteCourseAsync(Guid id)
+        {
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null) return false;
+
+            _context.Courses.Remove(course);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+    }
+}

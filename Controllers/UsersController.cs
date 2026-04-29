@@ -1,11 +1,8 @@
-﻿using AutoMapper;
-using CourseManagement.API.Data;
-using CourseManagement.API.DTOs;
+﻿using CourseManagement.API.DTOs;
+using CourseManagement.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
-using CourseManagement.API.Entities;
 
 namespace CourseManagement.API.Controllers
 {
@@ -14,29 +11,32 @@ namespace CourseManagement.API.Controllers
     [Authorize]
     public class UsersController : Controller
     {
-        private readonly AppDbContext _context;
-        private readonly IMapper _mapper;
+        private readonly IUserService _userService;
 
-        public UsersController(AppDbContext context, IMapper mapper)
+        public UsersController(IUserService userService)
         {
-            _context = context;
-            _mapper = mapper;
+            _userService = userService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var users = await _context.Set<User>().ToListAsync();
-            return Ok(_mapper.Map<IEnumerable<UserResponseDto>>(users));
+            var users = await _userService.GetAllAsync();
+            return Ok(users);
         }
 
         [HttpGet("me")]
         public async Task<IActionResult> GetProfile()
         {
             // Lấy ID từ Token của người đang đăng nhập
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _context.Set<User>().FindAsync(Guid.Parse(userId!));
-            return Ok(_mapper.Map<UserResponseDto>(user));
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdStr, out var userId))
+                return Unauthorized();
+
+            var user = await _userService.GetProfileAsync(userId);
+            if (user == null) return NotFound();
+
+            return Ok(user);
         }
     }
 }
