@@ -1,0 +1,16 @@
+services:
+  course-api:
+    build: .
+    ports:
+      - "5000:8080" # Truy cập API qua cổng 5000 ở máy thật
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development # <-- Thêm dòng này để bật Scalar/Swagger
+      - ConnectionStrings__DefaultConnection=Server=host.docker.internal;Database=CourseDb;User Id=sa;Password=sapassword;TrustServerCertificate=True
+      - ConnectionStrings__RedisConnection=redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
