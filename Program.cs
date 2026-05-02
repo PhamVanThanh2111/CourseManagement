@@ -54,7 +54,13 @@ namespace CourseManagement.API
 
             // --- 2. Database & AutoMapper ---
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("DefaultConnection"),
+                    sqlOptions => sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null)
+                ));
 
             builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
@@ -64,7 +70,7 @@ namespace CourseManagement.API
             builder.Services.AddScoped<ICourseService, Services.CourseService>();
 
             // --- 3. JWT Authentication ---
-            var jwtKey = builder.Configuration["Jwt:Key"] ?? "SecretKeyMacDinhCuaThanh2026";
+            var jwtKey = builder.Configuration["Jwt:Key"] ?? "SecretKeyMacDinh";
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -90,6 +96,23 @@ namespace CourseManagement.API
             });
 
             var app = builder.Build();
+
+            // --- Tự động tạo Database và Apply Migration khi khởi động ---
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var context = services.GetRequiredService<AppDbContext>();
+                    // Thực thi các file Migration để tạo Database (CourseDb) và các bảng
+                    context.Database.Migrate(); 
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "Lỗi khi apply migration cho database.");
+                }
+            }
 
             // --- 4. Cấu hình Middleware ---
             if (app.Environment.IsDevelopment())
