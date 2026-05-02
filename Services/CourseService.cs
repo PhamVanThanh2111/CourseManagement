@@ -55,6 +55,22 @@ namespace CourseManagement.API.Services
             return (true, response);
         }
 
+        public async Task<CourseResponseDto?> GetCourseBySpAsync(Guid id)
+        {
+            // Trong EF Core, không thể dùng FirstOrDefaultAsync() trực tiếp sau FromSqlRaw chạy Stored Procedure (EXEC) 
+            // vì EF Core sẽ cố gắng thêm "SELECT TOP(1)" bao quanh lệnh EXEC, gây ra lỗi SQL syntax.
+            // Giải pháp là gọi ToListAsync() / AsEnumerable() trước rồi mới lấy phần tử đầu tiên.
+            var courses = await _context.Courses.FromSqlRaw("EXEC sp_GetCourseById @CourseId = {0}", id)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var course = courses.FirstOrDefault();
+
+            if (course == null) return null;
+
+            return _mapper.Map<CourseResponseDto>(course);
+        }
+
         public async Task<Course> CreateCourseAsync(CreateCourseDto courseDto)
         {
             var course = new Course

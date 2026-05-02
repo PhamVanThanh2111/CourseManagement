@@ -13,8 +13,8 @@ namespace CourseManagement.API.Controllers
     {
         private readonly ICourseService _courseService;
 
-        public CoursesController(ICourseService courseService) 
-        { 
+        public CoursesController(ICourseService courseService)
+        {
             _courseService = courseService;
         }
 
@@ -26,7 +26,7 @@ namespace CourseManagement.API.Controllers
             return Ok(courses);
         }
 
-        // 2. GET: api/courses/5 (Lấy chi tiết theo ID)
+        // 2. GET: api/courses/578575EB-69D0-4DB7-F6FE-08DEA2B196CF (Lấy chi tiết theo ID)
         [HttpGet("{id}")]
         public async Task<ActionResult<Course>> GetCourse(Guid id)
         {
@@ -34,6 +34,16 @@ namespace CourseManagement.API.Controllers
             if (!result.IsSuccess) return NotFound();
 
             return Ok(result.Data);
+        }
+
+        // GET: api/courses/sp/578575EB-69D0-4DB7-F6FE-08DEA2B196CF
+        [HttpGet("sp/{id}")]
+        public async Task<ActionResult<CourseResponseDto>> GetCourseBySp(Guid id)
+        {
+            var result = await _courseService.GetCourseBySpAsync(id);
+            if (result == null) return NotFound();
+
+            return Ok(result);
         }
 
         // 3. POST: api/courses (Tạo mới)
@@ -44,7 +54,7 @@ namespace CourseManagement.API.Controllers
             return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course);
         }
 
-        // 4. PUT: api/courses/5 (Cập nhật)
+        // 4. PUT: api/courses/578575EB-69D0-4DB7-F6FE-08DEA2B196CF (Cập nhật)
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCourse(Guid id, UpdateCourseDto courseDto)
         {
@@ -54,7 +64,7 @@ namespace CourseManagement.API.Controllers
             return NoContent();
         }
 
-        // 5. DELETE: api/courses/5 (Xóa)
+        // 5. DELETE: api/courses/578575EB-69D0-4DB7-F6FE-08DEA2B196CF (Xóa)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCourse(Guid id)
         {
