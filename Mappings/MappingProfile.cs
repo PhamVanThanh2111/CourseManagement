@@ -12,6 +12,8 @@ namespace CourseManagement.API.Mappings
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             CreateMap<Course, CourseResponseDto>();
+
+            CreateMap<User, UserResponseDto>();
         }
     }
 }
