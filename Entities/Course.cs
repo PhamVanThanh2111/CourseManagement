@@ -24,5 +24,6 @@ namespace CourseManagement.API.Entities
 
         public DateTime UpdatedAt { get; set; }
 
+        public ICollection<UserCourse> UserCourses { get; set; } = new List<UserCourse>();
     }
 }
