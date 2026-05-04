@@ -6,6 +6,8 @@ using CourseManagement.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
+using Dapper;
+using System.Data;
 
 namespace CourseManagement.API.Services
 {
@@ -71,6 +73,22 @@ namespace CourseManagement.API.Services
             return _mapper.Map<CourseResponseDto>(course);
         }
 
+        public async Task<CourseDiscountDto?> GetCourseDetailsWithDiscountAsync(Guid id, decimal discountPercentage)
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@CourseId", id);
+            parameters.Add("@DiscountPercentage", discountPercentage);
+
+            var course = await connection.QueryFirstOrDefaultAsync<CourseDiscountDto>(
+                "sp_GetCourseDetailsWithDiscount",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return course;
+        }
+
         public async Task<Course> CreateCourseAsync(CreateCourseDto courseDto)
         {
             var course = new Course
@@ -103,6 +121,34 @@ namespace CourseManagement.API.Services
             if (course == null) return false;
 
             _context.Courses.Remove(course);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> AddUserToCourseAsync(Guid userId, Guid courseId)
+        {
+            var userCourse = await _context.UserCourses
+                .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.CourseId == courseId);
+
+            if (userCourse != null) return false; // Đã tham gia
+
+            _context.UserCourses.Add(new UserCourse 
+            { 
+                UserId = userId, 
+                CourseId = courseId 
+            });
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RemoveUserFromCourseAsync(Guid userId, Guid courseId)
+        {
+            var userCourse = await _context.UserCourses
+                .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.CourseId == courseId);
+
+            if (userCourse == null) return false; // Không tìm thấy
+
+            _context.UserCourses.Remove(userCourse);
             await _context.SaveChangesAsync();
             return true;
         }

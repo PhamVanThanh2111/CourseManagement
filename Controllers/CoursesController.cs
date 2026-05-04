@@ -46,6 +46,20 @@ namespace CourseManagement.API.Controllers
             return Ok(result);
         }
 
+        // GET: api/courses/discount/578575EB-69D0-4DB7-F6FE-08DEA2B196CF?percentage=20
+        [HttpGet("discount/{id}")]
+        public async Task<ActionResult<CourseDiscountDto>> GetCourseDetailsWithDiscount(Guid id, [FromQuery] decimal percentage = 0)
+        {
+            var result = await _courseService.GetCourseDetailsWithDiscountAsync(id, percentage);
+
+            if (result == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(result);
+        }
+
         // 3. POST: api/courses (Tạo mới)
         [HttpPost]
         public async Task<ActionResult<Course>> CreateCourse(CreateCourseDto courseDto)
@@ -72,6 +86,26 @@ namespace CourseManagement.API.Controllers
             if (!isSuccess) return NotFound();
 
             return Ok(new { Message = "Đã xóa khóa học thành công" });
+        }
+
+        // 6. POST: api/courses/578575EB-69D0-4DB7-F6FE-08DEA2B196CF/users/3F2504E0-4F89-11D3-9A0C-0305E82C3301 (Thêm user vào khóa học)
+        [HttpPost("{courseId}/users/{userId}")]
+        public async Task<IActionResult> AddUserToCourse(Guid courseId, Guid userId)
+        {
+            var isSuccess = await _courseService.AddUserToCourseAsync(userId, courseId);
+            if (!isSuccess) return BadRequest("Không thể thêm người dùng vào khóa học. Có thể họ đã đăng ký khóa học này.");
+
+            return Ok(new { Message = "Đã thêm người dùng vào khóa học thành công" });
+        }
+
+        // 7. DELETE: api/courses/578575EB-69D0-4DB7-F6FE-08DEA2B196CF/users/3F2504E0-4F89-11D3-9A0C-0305E82C3301 (Xóa user khỏi khóa học)
+        [HttpDelete("{courseId}/users/{userId}")]
+        public async Task<IActionResult> RemoveUserFromCourse(Guid courseId, Guid userId)
+        {
+            var isSuccess = await _courseService.RemoveUserFromCourseAsync(userId, courseId);
+            if (!isSuccess) return NotFound("Người dùng này chưa có trong khóa học");
+
+            return Ok(new { Message = "Đã xóa người dùng khỏi khóa học thành công" });
         }
 
         public IActionResult Index()

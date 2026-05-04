@@ -38,5 +38,14 @@ namespace CourseManagement.API.Controllers
 
             return Ok(user);
         }
+
+        [HttpGet("{id}/courses")]
+        public async Task<IActionResult> GetUserWithCourses(Guid id)
+        {
+            var userWithCourses = await _userService.GetUserWithCoursesSpAsync(id);
+            if (userWithCourses == null) return NotFound();
+
+            return Ok(userWithCourses);
+        }
     }
 }

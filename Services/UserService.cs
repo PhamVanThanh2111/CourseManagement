@@ -4,6 +4,8 @@ using CourseManagement.API.DTOs;
 using CourseManagement.API.Entities;
 using CourseManagement.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Dapper;
+using System.Data;
 
 namespace CourseManagement.API.Services
 {
@@ -29,6 +31,34 @@ namespace CourseManagement.API.Services
             var user = await _context.Set<User>().FindAsync(userId);
             if (user == null) return null;
             return _mapper.Map<UserResponseDto>(user);
+        }
+
+        public async Task<UserWithCoursesDto?> GetUserWithCoursesSpAsync(Guid userId)
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@UserId", userId);
+
+            // Dapper call to stored procedure
+            using (var multi = await connection.QueryMultipleAsync(
+                "sp_GetUserWithCourses",
+                parameters,
+                commandType: CommandType.StoredProcedure))
+            {
+                Console.WriteLine("Multi", multi);
+                // Result 1: User info
+                var user = await multi.ReadFirstOrDefaultAsync<UserWithCoursesDto>();
+
+                if (user != null)
+                {
+                    // Result 2: List of courses
+                    var courses = await multi.ReadAsync<CourseResponseDto>();
+                    user.Courses = courses.ToList();
+                }
+
+                return user;
+            }
         }
     }
 }
