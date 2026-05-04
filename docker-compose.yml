@@ -5,12 +5,27 @@ services:
       - "5000:8080" # Truy cập API qua cổng 5000 ở máy thật
     environment:
       - ASPNETCORE_ENVIRONMENT=Development # <-- Thêm dòng này để bật Scalar/Swagger
-      - ConnectionStrings__DefaultConnection=Server=host.docker.internal;Database=CourseDb;User Id=sa;Password=sapassword;TrustServerCertificate=True
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=CourseDb;User Id=sa;Password=Blacksmith!1;TrustServerCertificate=True
+      - Jwt__Key=Chuoi_Secret_Sieu_Dai_Va_Bao_Mat
       - ConnectionStrings__RedisConnection=redis:6379
     depends_on:
       - redis
+      - sqlserver
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Blacksmith!1
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlvolume:/var/opt/mssql
+
+volumes:
+  sqlvolume:
