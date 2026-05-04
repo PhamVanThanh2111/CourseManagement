@@ -15,6 +15,7 @@ namespace CourseManagement.API.Entities
 
         public string? Description { get; set; }
 
+        [Column(TypeName = "nvarchar(255)")]
         public string Author { get; set; } = string.Empty;
 
         [Column(TypeName = "decimal(18,2)")]
