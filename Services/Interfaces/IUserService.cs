@@ -7,5 +7,6 @@ namespace CourseManagement.API.Services.Interfaces
         Task<IEnumerable<UserResponseDto>> GetAllAsync();
         Task<UserResponseDto?> GetProfileAsync(Guid userId);
         Task<UserWithCoursesDto?> GetUserWithCoursesSpAsync(Guid userId);
+        Task<bool> UpdateUserAvatarAsync(Guid userId, string avatarUrl);
     }
 }

@@ -132,10 +132,10 @@ namespace CourseManagement.API.Services
 
             if (userCourse != null) return false; // Đã tham gia
 
-            _context.UserCourses.Add(new UserCourse 
-            { 
-                UserId = userId, 
-                CourseId = courseId 
+            _context.UserCourses.Add(new UserCourse
+            {
+                UserId = userId,
+                CourseId = courseId
             });
             await _context.SaveChangesAsync();
             return true;

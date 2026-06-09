@@ -60,5 +60,15 @@ namespace CourseManagement.API.Services
                 return user;
             }
         }
+
+        public async Task<bool> UpdateUserAvatarAsync(Guid userId, string avatarUrl)
+        {
+            var user = await _context.Set<User>().FindAsync(userId);
+            if (user == null) return false;
+
+            user.AvatarUrl = avatarUrl;
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

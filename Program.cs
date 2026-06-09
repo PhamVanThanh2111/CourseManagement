@@ -68,6 +68,7 @@ namespace CourseManagement.API
             builder.Services.AddScoped<IAuthService, Services.AuthService>();
             builder.Services.AddScoped<IUserService, Services.UserService>();
             builder.Services.AddScoped<ICourseService, Services.CourseService>();
+            builder.Services.AddScoped<Services.ICloudinaryService, Services.CloudinaryService>();
 
             // --- 3. JWT Authentication ---
             var jwtKey = builder.Configuration["Jwt:Key"] ?? "SecretKeyMacDinh";
